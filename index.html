@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="./jquery-easyui-1.6.2/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./jquery-easyui-1.6.2/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="./jquery-easyui-1.6.2/demo/demo.css">
+    <script type="text/javascript" src="./jquery-1.12.4.js"></script>
+    <script type="text/javascript" src="./jquery-easyui-1.6.2/jquery.easyui.min.js"></script>
+    <style>
+        .datagrid-body{
+
+        }
+    </style>
+</head>
+
+<body>
+    <table id="dg" title="Client Side Pagination" style="width:700px;height:300px" data-options="
+				rownumbers:true,
+				singleSelect:true,
+				autoRowHeight:false,
+				pagination:true,
+				pageSize:30,
+                total:114,
+                collapsible:true">
+        <thead>
+            <tr>
+                <th field="inv" width="80">Inv No</th>
+                <th field="date" width="100">Date</th>
+                <th field="name" width="120">Name</th>
+                <th field="amount" width="120">Amount</th>
+                <th field="note" width="110">Note</th>
+            </tr>
+        </thead>
+    </table>
+
+    <script>
+        var apiUrl = 'https://api.github.com/search/users?q=wsad';
+  
+        function getData(apiUrl) {
+            var options = {
+                rows: [],
+                total:0,
+            }
+            $.ajax({
+                type: 'GET',
+                url: apiUrl,
+                async: false,
+                success: function (res) {
+                    //console.log(res.items)
+                    var datas = res.items
+                    var odata = datas.map(function (item, index) {
+                        var { id, login, score, type, site_admin } = item;
+                        return { id, login, score, type, site_admin }
+                    })
+                    //console.log(data)
+                    options.total = res.total_count;
+                    for (var i = 0; i < odata.length; i++) {
+                        var _data = odata[i]
+                        //console.log(_data)
+                        options.rows.push({   //对应自动生成表格
+                            inv: _data.id,
+                            date: _data.login,
+                            name: _data.type,
+                            amount: _data.score,
+                            note: _data.site_admin,
+                        });
+                    }
+                }
+            })
+            console.log(options)
+            return options
+        }
+
+        function pagerFilter(data) {
+            //console.log(data)
+            if (typeof data.length == 'number' && typeof data.splice == 'function') { // is array
+                data = {
+                    total: data.total,
+                    rows: data.rows
+                }
+            }
+            var dg = $(this);
+            var opts = dg.datagrid('options');
+            var pager = dg.datagrid('getPager');
+            pager.pagination({
+                onSelectPage: function (pageNum, pageSize) {
+                    opts.pageNumber = pageNum;
+                    opts.pageSize = pageSize;
+                    pager.pagination('refresh', {
+                        pageNumber: pageNum,
+                        pageSize: pageSize
+                    });
+                    console.log(pageNum)//
+                    apiUrl = 'https://api.github.com/search/users?q=wsad&page=' + pageNum
+                    var obj = getData(apiUrl)
+                    console.log(obj)
+                    data.rows = obj.rows
+                    
+                    dg.datagrid('loadData', data);
+                }
+            });
+            console.log(opts.pageNumber)
+            $('.datagrid-body').scrollTop(0);
+            return data;
+        }
+        $(function () {
+            $('#dg').datagrid({ loadFilter: pagerFilter }).datagrid('loadData', getData(apiUrl));
+        });
+    </script>
+
+</body>
+
+</html>
